@@ -1,0 +1,191 @@
+───────────────────────────────── GENERAL ─────────────────────────────────
+* { box-sizing: border-box; margin: 0; padding: 0; } /* Reset default styles and use border-box for easier sizing (Without border-box: width: 200px + padding: 20px = actually 240px wide) (With border-box: width: 200px + padding: 20px = still 200px wide) */
+
+body {
+    background: #0d0f12;
+    color: #e2e8f0;
+    font-family: 'Courier New', monospace; /* if Courier New is missing, use whatever monospace font the system has installed */
+    min-height: 100vh; /* Take all remaining vertical space */
+    padding: 2rem; /* In all directions */
+}
+
+header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 2.5rem; /* Outside of the element */
+    border-bottom: 1px solid #1e2530;
+    padding-bottom: 1.25rem; /* Inside the element */
+    position: relative; /* Because panel uses position relative */
+}
+
+h1 {
+    font-size: 2rem;
+    font-weight: normal;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: #94a3b8;
+}
+
+.section-label {
+    font-size: 1.5rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #475569;
+    margin-bottom: 0.75rem;
+}
+
+/* ───────────────────────────────── DEVICE CONNECTIONS ───────────────────────────────── */
+.connection-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+}
+
+.connection-header .section-label {
+    margin-bottom: 0;
+}
+
+#device-dot {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #334155;
+    transition: background 0.3s;
+}
+
+#device-dot.connected    { background: #22c55e; }
+#device-dot.disconnected { background: #ef4444; }
+
+.device-card {
+    background: #111318;
+    border: 1px solid #1e2530;
+    border-radius: 6px;
+    padding: 1.5rem 1.25rem;
+    transition: border-color 0.4s;
+    margin-bottom: 1rem;
+}
+
+.device-card.connected    { border-color: #22c55e55; }  /* faint green border */
+.device-card.disconnected { border-color: #ef444455; }  /* faint red border */
+
+.device-stat{
+    color: #94a3b8;
+    margin-bottom: 0.5rem;
+    margin-top:0.5rem;
+}
+
+/* ───────────────────────────────── VEHICLE DETECTION ───────────────────────────────── */
+#vehicle-detection {
+    background: #0a0c0f;
+    border: 1px solid #1e2530;
+    border-radius: 6px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+#vehicle-feed {
+    height: 400px;
+    width: 400px;
+    border: none;
+    margin: 0 auto; /* Center horizontally */
+}
+
+#detection-log {
+    border: 1px solid #1e2530;
+    border-radius: 4px;
+    padding: 1rem;
+    height: 200px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.log-entry {
+    display: grid;
+    grid-template-columns: 7rem 10rem 1fr; /* 1fr (1 fraction unit) = take all remaining space */
+    gap: 1rem;
+    font-size: 0.8rem;
+    line-height: 1.6;
+    border-bottom: 1px solid #0d0f1244;
+    padding-bottom: 4px;
+    animation: fadein 0.2s ease;
+}
+
+.log-time    { color: #475569; }
+.log-topic   { color: #38bdf8; }
+.log-payload { color: #a3e635; }
+
+#detection-empty {
+    color: #334155;
+    font-size: 0.8rem;
+    margin: auto;
+    text-align: center;
+    line-height: 2;
+}
+
+#detection-chart {
+    width: 100%;
+}
+
+#detection-filters {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+}
+
+#detection-clear-btn {
+    background:  #0d0f12;
+    border:      1px solid #1e2530;
+    border-radius: 4px;
+    color:       #475569;
+    font-family: 'Courier New', monospace;
+    font-size:   0.75rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding:     0.4rem 0.85rem;
+    cursor:      pointer;
+    transition:  all 0.2s;
+    margin-left: auto;                /* pushes it to the right */
+}
+
+#detection-clear-btn:hover { border-color: #ef4444; color: #ef4444; }
+
+.detection-filter-btn {
+    background: #0d0f12;
+    border: 1px solid #1e2530;
+    border-radius: 4px;
+    color: #475569;
+    font-family: 'Courier New', monospace;
+    font-size: 0.75rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 0.4rem 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.detection-filter-btn:hover  { border-color: #38bdf8; color: #38bdf8; }
+.detection-filter-btn.active { border-color: #38bdf8; color: #38bdf8; background: #38bdf811; }
+
+#detection-no-data {
+    color: #475569;
+    text-align: center;
+}
+
+#detection-color-picker {
+    width:         28px;
+    height:        28px;
+    border:        1px solid #1e2530;
+    border-radius: 4px;
+    background:    none;
+    cursor:        pointer;
+}
+
+#detection-color-picker::-webkit-color-swatch-wrapper { padding: 2px; }
+#detection-color-picker::-webkit-color-swatch         { border: none; border-radius: 2px; }
