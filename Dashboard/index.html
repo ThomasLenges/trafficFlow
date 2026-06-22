@@ -4,17 +4,15 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Building Monitor Dashboard</title>
+    <title>Traffic Flow Dashboard</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script> <!-- Chart.js Library -->
-    <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js"></script> <!-- Chart.js Zoom Plugin -->
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script> <!-- Chart.js Zoom Plugin -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.min.js"></script> <!-- Socket.IO Library (for camera streaming) -->
     <link rel='stylesheet' href='styles.css'>
   </head>
 
   <body>
     <header>
-      <h1>Building Monitor</h1>
+      <h1>Traffic Flow Dashboard</h1>
     </header>
 
     <!-- ──────────────── UNO Q SOCKET.IO CONNECTION/DETECTIONS ──────────────── -->
@@ -30,24 +28,23 @@
 
 
 <!-- ──────────────────────────────── VEHICLE DETECTION ───────────────────────────────── -->
-    <div data-widget="vehicle" draggable="true">
-      <div class="section-label">Vehicle Detection</div>
-      <div id="vehicle-detection">
-        <iframe id="vehicle-feed" src="http://bigq0.local:4912/embed"></iframe>
-        <div id="detection-log">
-          <div id="detection-empty">Waiting for detections...<br>Make sure the camera is running</div>
-        </div>
-        <div id="detection-filters">
-          <button class="detection-filter-btn active" data-range="5m">Last 5 min</button>
-          <button class="detection-filter-btn" data-range="1h">Last hour</button>
-          <button class="detection-filter-btn" data-range="1d">Last day</button>
-          <button class="detection-filter-btn" data-range="1w">Last week</button>
-          <input type="color" id="detection-color-picker" value="#38bdf8" title="Chart color">
-          <button id="detection-clear-btn">Clear History</button>
-        </div>
-        <div id="detection-no-data" style="display:none;">No data available for the selected filter!</div>
-        <canvas id="detection-chart" height="200"></canvas>
+    <div class="section-label">Vehicle Detection</div>
+    <div id="vehicle-detection">
+      <iframe id="vehicle-feed" src="http://bigq0.local:4912/embed"></iframe>
+      <div id="detection-log">
+        <div id="detection-empty">Waiting for detections...<br>Make sure the camera is running</div>
       </div>
+      <div id="detection-filters">
+        <button class="detection-filter-btn active" data-range="5m">Last 5 min</button>
+        <button class="detection-filter-btn" data-range="1h">Last hour</button>
+        <button class="detection-filter-btn" data-range="1d">Last day</button>
+        <button class="detection-filter-btn" data-range="1w">Last week</button>
+        <input type="color" id="detection-color-picker-rtl" value="#1ba0b5" title="Chart color RTL">
+        <input type="color" id="detection-color-picker-ltr" value="#348d22" title="Chart color LTR">
+        <button id="detection-clear-btn">Clear History</button>
+      </div>
+      <div id="detection-no-data" style="display:none;">No data available for the selected filter!</div>
+      <canvas id="detection-chart" height="200"></canvas>
     </div>
   </body>
 

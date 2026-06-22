@@ -1,11 +1,10 @@
-───────────────────────────────── GENERAL ─────────────────────────────────
+/* ───────────────────────────────── GENERAL ───────────────────────────────── */
 * { box-sizing: border-box; margin: 0; padding: 0; } /* Reset default styles and use border-box for easier sizing (Without border-box: width: 200px + padding: 20px = actually 240px wide) (With border-box: width: 200px + padding: 20px = still 200px wide) */
 
 body {
     background: #0d0f12;
     color: #e2e8f0;
     font-family: 'Courier New', monospace; /* if Courier New is missing, use whatever monospace font the system has installed */
-    min-height: 100vh; /* Take all remaining vertical space */
     padding: 2rem; /* In all directions */
 }
 
@@ -16,7 +15,6 @@ header {
     margin-bottom: 2.5rem; /* Outside of the element */
     border-bottom: 1px solid #1e2530;
     padding-bottom: 1.25rem; /* Inside the element */
-    position: relative; /* Because panel uses position relative */
 }
 
 h1 {
@@ -44,7 +42,7 @@ h1 {
 }
 
 .connection-header .section-label {
-    margin-bottom: 0;
+    margin-bottom: 0; /* To avoid double margin bottom (1 time from section-label, 1 time from connection-header) */
 }
 
 #device-dot {
@@ -59,7 +57,7 @@ h1 {
 #device-dot.disconnected { background: #ef4444; }
 
 .device-card {
-    background: #111318;
+    background: #0a0c0f;
     border: 1px solid #1e2530;
     border-radius: 6px;
     padding: 1.5rem 1.25rem;
@@ -178,7 +176,8 @@ h1 {
     text-align: center;
 }
 
-#detection-color-picker {
+#detection-color-picker-rtl,
+#detection-color-picker-ltr {
     width:         28px;
     height:        28px;
     border:        1px solid #1e2530;
@@ -187,5 +186,7 @@ h1 {
     cursor:        pointer;
 }
 
-#detection-color-picker::-webkit-color-swatch-wrapper { padding: 2px; }
-#detection-color-picker::-webkit-color-swatch         { border: none; border-radius: 2px; }
+#detection-color-picker-rtl::-webkit-color-swatch-wrapper { padding: 2px; }
+#detection-color-picker-rtl::-webkit-color-swatch         { border: none; border-radius: 2px; }
+#detection-color-picker-ltr::-webkit-color-swatch-wrapper { padding: 2px; }
+#detection-color-picker-ltr::-webkit-color-swatch         { border: none; border-radius: 2px; }

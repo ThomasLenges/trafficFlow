@@ -6,13 +6,15 @@ const emptyDetectionLogs = document.getElementById("detection-empty");
 const deviceDot = document.getElementById("device-dot");
 const deviceLastDetection = document.getElementById("time-q-detection");
 const deviceLastConnection = document.getElementById("time-q-connection");
+const detectionColorPickerRTL = document.getElementById("detection-color-picker-rtl");
+const detectionColorPickerLTR = document.getElementById("detection-color-picker-ltr");
 
 // ───────────────────────── INITIALIZE VALUES ─────────────────────────
-if (localStorage.getItem("deviceLastDetection")) {
-    deviceLastDetection.innerText = localStorage.getItem("deviceLastDetection");
-}
 if (localStorage.getItem("deviceLastConnection")) {
     deviceLastConnection.innerText = localStorage.getItem("deviceLastConnection");
+}
+if (localStorage.getItem("deviceLastDetection")) {
+    deviceLastDetection.innerText = localStorage.getItem("deviceLastDetection");
 }
 
 // ───────────────────────── SOCKET.IO CONNECTION ─────────────────────────
@@ -38,43 +40,93 @@ socket.on("disconnect", () => {
 
 // ───────────────────────── DETECTION HANDLER ─────────────────────────
 let detectionCountValue = 0;
+const loggedDirectionFor = new Set(); // track_ids whose direction we've already logged
 
 socket.on("vehicle_detection", (message) => {
-    //console.log("SOCKET: Received vehicle detection message:", message);
 
     const entries = JSON.parse(message);
 
     entries
-        .filter(e => e.content.toLowerCase() === "vehicle")  // ignore non-vehicle detections, lower case required as the detection model returns "Vehicle" with a capital V
         .forEach(e => {
-            if (emptyDetectionLogs) emptyDetectionLogs.remove();
+            // NEW DETECTION
+            if (e.is_new === true) {
+                if (emptyDetectionLogs) emptyDetectionLogs.remove();
 
-            // ── Update UNO Q card ──
-            detectionCountValue++;
-            detectionCount.innerText = detectionCountValue;
-            deviceLastDetection.innerText = new Date(e.timestamp).toLocaleTimeString("en-GB");
-            localStorage.setItem("deviceLastDetection", deviceLastDetection.innerText);
+                // ── Update UNO Q card ──
+                detectionCountValue++;
+                detectionCount.innerText = detectionCountValue;
+                deviceLastDetection.innerText = new Date(e.timestamp).toLocaleTimeString("en-GB");
+                localStorage.setItem("deviceLastDetection", deviceLastDetection.innerText);
 
-            // ── Log entry ──
-            const entry = document.createElement("div");
-            entry.className = "log-entry";
-            entry.innerHTML = `
-                <span class="log-time">${new Date(e.timestamp).toLocaleTimeString("en-GB")}</span>
-                <span class="log-topic">Vehicle Detected</span>
-                <span class="log-payload">${e.confidence}% confidence</span>
-            `;
-            detectionLog.appendChild(entry);
-            detectionLog.scrollTop = detectionLog.scrollHeight;
+                // ── Log entry ──
+                const entry = document.createElement("div");
+                entry.className = "log-entry";
+                entry.dataset.trackId = e.track_id; // Kept for direction identification
+                entry.innerHTML = `
+                    <span class="log-time">${new Date(e.timestamp).toLocaleTimeString("en-GB")}</span>
+                    <span class="log-topic">Vehicle Detected</span>
+                    <span class="log-payload">
+                        <span class="log-confidence">${e.confidence}% average confidence</span><span class="log-direction"></span>
+                    </span>
+                `;
+                detectionLog.appendChild(entry);
+                detectionLog.scrollTop = detectionLog.scrollHeight;
+            
+            // OLD DETECTION RECEIVED DIRECTION INFO
+            } else {
+                const existingEntry = detectionLog.querySelector(`[data-track-id="${e.track_id}"]`);
+                existingEntry.querySelector(".log-confidence").textContent = `${e.confidence}% average confidence`;
+                
+                if (e.direction && !loggedDirectionFor.has(e.track_id)) {
+                    // ── First later frame where direction becomes known ──
+                    loggedDirectionFor.add(e.track_id);
 
-            // ── Local storage ──
-            updateDetectionHistory(new Date(e.timestamp));
+                    // ── Update the existing log entry for this vehicle to show direction ──
+                    existingEntry.querySelector(".log-direction").textContent = ` · ${e.direction.replaceAll("_", " ")}`;
+
+                    // ── Local storage ──
+                    updateDetectionHistory(new Date(e.timestamp), e.direction);
+                }
+            }
         });
 });
 
 // ───────────────────────── DETECTION HISTORY ─────────────────────────
 const detectionHistory = JSON.parse(localStorage.getItem("detectionHistory") || "[]").map(e => ({
-    timestamp: new Date(e.timestamp)  // convert string back to Date object
-}));   // { timestamp: Date }
+    timestamp: new Date(e.timestamp),  // convert string back to Date object
+    direction: e.direction
+}));   // { timestamp: Date, direction: string }
+
+// // ───────────────────────── UPDATE RECORDS ─────────────────────────
+function updateDetectionHistory(timestamp, direction) {
+    detectionHistory.push({ timestamp, direction });
+    saveDetectionHistory();
+}
+
+// // ───────────────────────── SAVE HISTORY (One week max) ─────────────────────────
+function saveDetectionHistory() {
+    const oneWeekAgo = new Date(Date.now() - 7*24*60*60*1000);
+    const pruned     = detectionHistory.filter(e => e.timestamp >= oneWeekAgo);
+    localStorage.setItem("detectionHistory", JSON.stringify(pruned));
+}
+
+// // ───────────────────────── FILTER BUTTONS ─────────────────────────
+document.querySelectorAll(".detection-filter-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+        document.querySelectorAll(".detection-filter-btn").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        renderDetectionChart();
+        refreshDetectionChart();
+    });
+});
+
+// // ───────────────────────── CLEAR HISTORY BUTTON ─────────────────────────
+document.getElementById("detection-clear-btn").addEventListener("click", () => {
+    if (!confirm("Clear all detection history?")) return;
+    detectionHistory.length = 0; // Deletes history of detections on the current session
+    localStorage.removeItem("detectionHistory"); // Deletes history of detections on the localStorage (for all sessions)
+    renderDetectionChart();
+});
 
 // ───────────────────────── CHART SETUP ─────────────────────────
 const detectionCtx = document.getElementById("detection-chart").getContext("2d");
@@ -82,23 +134,22 @@ const detectionChart = new Chart(detectionCtx, {
     type: "bar",
     data: {
         labels: [],
-        datasets: [{
-            label:           "Detections",
-            data:            [],
-            borderColor:     "#0b18d6",
-            borderWidth:     2,
-            backgroundColor: "#081299",
-        }]
+        datasets: [
+            {label:           "Detections for right to left", data:            [], borderColor:     "#1ba0b5", borderWidth:     2, backgroundColor: "#081299"},
+            {label:           "Detections for left to right", data:            [], borderColor:     "#348d22", borderWidth:     2, backgroundColor: "#990808"}
+        ]
     },
     options: {
         responsive: false,
         animation:  false,
         scales: {
             x: {
+                stacked: true, // Stack the two datasets on top of each other
                 ticks: { color: "#475569", font: { family: "Courier New" } },
                 grid:  { color: "#1e2530" }
             },
             y: {
+                stacked: true, // Stack the two datasets on top of each other
                 min:   0,
                 ticks: { color: "#475569", font: { family: "Courier New" }, stepSize: 1 },
                 grid:  { color: "#1e2530" }
@@ -118,17 +169,9 @@ const detectionChart = new Chart(detectionCtx, {
         }
     }
 });
-// To show restored data (KEY LINE TO PROPERLY WORK)
-renderDetectionChart();
-
-// // ───────────────────────── UPDATE RECORDS ─────────────────────────
-function updateDetectionHistory(timestamp) {
-    detectionHistory.push({ timestamp });
-    saveDetectionHistory();
-}
 
 // //───────────────────────── CHART RENDER ─────────────────────────
-// // Thanks Sonnet 4.6 because of how much I struggled with this for whatsoever reason
+// // Thanks to Sonnet 4.6 because of how much I struggled with this for whatsoever reason
 function renderDetectionChart() {
 
     const activeBtn = document.querySelector(".detection-filter-btn.active");
@@ -155,12 +198,16 @@ function renderDetectionChart() {
 
     //  ── Build buckets ──
     const bucketCount = Math.ceil(ranges[range] / bucketSize);
-    const counts      = new Array(bucketCount).fill(0);
+    const rtlCounts      = new Array(bucketCount).fill(0);
+    const ltrCounts      = new Array(bucketCount).fill(0);
 
     filtered.forEach(e => {
         const age        = now - e.timestamp;               // ms ago
         const bucketIdx  = Math.floor((ranges[range] - age) / bucketSize); // 0 = oldest bucket
-        if (bucketIdx >= 0 && bucketIdx < bucketCount) counts[bucketIdx]++;
+        if (bucketIdx < 0 || bucketIdx >= bucketCount) return;
+
+        if (e.direction === "right_to_left") rtlCounts[bucketIdx]++;
+        if (e.direction === "left_to_right") ltrCounts[bucketIdx]++;
     });
 
     // ── Build labels ──
@@ -181,34 +228,10 @@ function renderDetectionChart() {
         return startTime.toLocaleTimeString("en-GB") + " -> " + endTime.toLocaleTimeString("en-GB");
     };
 
-    detectionChart.data.labels           = counts.map((_, i) => formatLabel(i));
-    detectionChart.data.datasets[0].data = counts;
+    detectionChart.data.labels           = rtlCounts.map((_, i) => formatLabel(i));
+    detectionChart.data.datasets[0].data = rtlCounts;
+    detectionChart.data.datasets[1].data = ltrCounts;
     detectionChart.update();
-}
-
-// // ───────────────────────── FILTER BUTTONS ─────────────────────────
-document.querySelectorAll(".detection-filter-btn").forEach(btn => {
-    btn.addEventListener("click", () => {
-        renderDetectionChart();
-        document.querySelectorAll(".detection-filter-btn").forEach(b => b.classList.remove("active"));
-        btn.classList.add("active");
-        refreshDetectionChart();
-    });
-});
-
-// // ───────────────────────── CLEAR HISTORY BUTTON ─────────────────────────
-document.getElementById("detection-clear-btn").addEventListener("click", () => {
-    if (!confirm("Clear all detection history?")) return;
-    detectionHistory.length = 0;
-    localStorage.removeItem("detectionHistory");
-    renderDetectionChart();
-});
-
-// // ───────────────────────── SAVE HISTORY (One week max) ─────────────────────────
-function saveDetectionHistory() {
-    const oneWeekAgo = new Date(Date.now() - 7*24*60*60*1000);
-    const pruned     = detectionHistory.filter(e => e.timestamp >= oneWeekAgo);
-    localStorage.setItem("detectionHistory", JSON.stringify(pruned));
 }
 
 // // ───────────────────────── CONTINUOUS CHART REFRESH ─────────────────────────
@@ -219,29 +242,47 @@ function refreshDetectionChart() {
     const range     = activeBtn ? activeBtn.dataset.range : "5m";
 
     setInterval(renderDetectionChart, refreshRates[range]); // Refresh every 30 seconds to keep the chart updated even without new detections
-    console.log("Refresh rate is", refreshRates[range]);
+    console.log("CHART: Refresh rate is", refreshRates[range]);
 }
 
-refreshDetectionChart();
-
-// // ───────────────────────── COLOR PICKER ─────────────────────────
-const detectionColorPicker = document.getElementById("detection-color-picker");
-
+// // ───────────────────────── COLOR PICKERS ─────────────────────────
 // Restore saved color from localStorage
-const savedDetectionColor = localStorage.getItem("detectionChartColor");
-if (savedDetectionColor) {
-    detectionColorPicker.value = savedDetectionColor;
-    applyDetectionChartColor(savedDetectionColor);
+const savedDetectionColorRTL = localStorage.getItem("detectionChartColorRTL");
+const savedDetectionColorLTR = localStorage.getItem("detectionChartColorLTR");
+
+if (savedDetectionColorRTL) {
+    detectionColorPickerRTL.value = savedDetectionColorRTL;
+    applyDetectionChartColorRTL(savedDetectionColorRTL);
 }
 
-detectionColorPicker.addEventListener("input", (e) => {
+if (savedDetectionColorLTR) {
+    detectionColorPickerLTR.value = savedDetectionColorLTR;
+    applyDetectionChartColorLTR(savedDetectionColorLTR);
+}
+
+detectionColorPickerRTL.addEventListener("input", (e) => {
     const color = e.target.value;
-    localStorage.setItem("detectionChartColor", color);
-    applyDetectionChartColor(color);
+    localStorage.setItem("detectionChartColorRTL", color);
+    applyDetectionChartColorRTL(color);
 });
 
-function applyDetectionChartColor(color) {
+detectionColorPickerLTR.addEventListener("input", (e) => {
+    const color = e.target.value;
+    localStorage.setItem("detectionChartColorLTR", color);
+    applyDetectionChartColorLTR(color);
+});
+
+function applyDetectionChartColorRTL(color) {
     detectionChart.data.datasets[0].borderColor          = color;
     detectionChart.data.datasets[0].backgroundColor      = color + "66"; // add transparency for filling below the temperature
     detectionChart.update();
 }
+
+function applyDetectionChartColorLTR(color) {
+    detectionChart.data.datasets[1].borderColor          = color;
+    detectionChart.data.datasets[1].backgroundColor      = color + "66"; // add transparency for filling below the temperature
+    detectionChart.update();
+}
+
+// To show restored data (KEY LINE TO PROPERLY WORK)
+refreshDetectionChart();
