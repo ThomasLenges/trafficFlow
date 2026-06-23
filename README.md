@@ -105,3 +105,7 @@ Detections are aggregated into a bar chart showing flow by direction (right-to-l
 </p>
 
 ## Deployment
+
+1. Follow Arduino's UNO Q setup to get the board on your network and accessible over SSH/VS Code Remote [here](https://github.com/ThomasLenges/trafficFlow/blob/master/ARDUINO_UNO_Q/README.md).
+2. Start the app with `arduino-app-cli app start ~/path/to/appFolder`.
+3. Note the board's local IP or hostname (shown in the python logs (`arduino-app-cli app logs ~/path/to/ARDUINO_UNO_Q`)) the dashboard needs this to reach the camera/recording API directly.
