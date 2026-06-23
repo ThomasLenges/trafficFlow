@@ -6,14 +6,12 @@ The Arduino UNO Q is an unusual board: it pairs an MCU running classic C++ sketc
 
 ## Python application
 
-The person detection app is based on Arduino's built-in "Person Classifier on Camera" example. 
-That example sets up a `VideoImageClassification` stream and a `WebUI`, then streams every detection (label, confidence, timestamp) to the browser as JSON over a Socket.IO message. 
+The person detection app is based on Arduino's built-in "Detect Objects on Camera" example. 
+That example sets up a `VideoObjectDetection` stream and a `WebUI`, then streams every detection (label, confidence, timestamp) to the browser as JSON over a Socket.IO message. 
 
-This project builds on that scaffold: the confidence threshold is raised and a debounce window is added so the camera doesn't fire as many repeated detections for the same person standing in frame, the detection stream is filtered down to the "person" class before anything reaches the dashboard. 
+This project builds on that scaffold: the confidence threshold is raised to ensure a certain detection accuracy.
 
-Recording is built on top of the same camera stream the detection model already has open. When recording starts, a background thread grabs frames directly from the detection pipeline's camera object and writes them to an `.mp4` file at 10 FPS. When it stops, the file is re-encoded from `mp4v` to H.264 with `ffmpeg`. Browsers don't reliably play `mp4v` natively, so this conversion is what makes the recording actually playable in the dashboard's video element.
-
-Recordings, listing, and deletion are all exposed as plain HTTP endpoints through the same `WebUI` brick used for detection streaming. `start-recording` and `stop-recording` toggle the background capture, `list-recordings` returns the available files newest-first, and a `DELETE` endpoint removes a given recording. The dashboard's Recording Control widget wraps all four calls with buttons and an inline player, so none of this needs to be touched manually, but they're plain `curl`-able endpoints if you want to script around them or check the camera independently of the browser.
+See root README to better understand the SW.
 
 ## Deployment and usage: UNO Q development in VS Code
 
@@ -73,6 +71,12 @@ To add Python libraries to an app, create a `requirements.txt` file inside that 
 ```bash
 rm -rf ~/apps/YourAppName/.cache
 ```
+
+### Edge Impulse Model Deployment
+To add a custom Edge Impulse model, you have two options:
+
+1. **Via App Lab**: link your Edge Impulse account in App Lab. Any model you generate there will automatically become available under the brick folder by clicking the "AI models" option.
+2. **Via VS Code**: download the `model.eim` and `model.yaml` files from your Edge Impulse project, place them under `home/arduino/.arduino-brick/models/custom-ei`, then update your `app.yaml` file with the correct model ID. See this project's files for a working example.
 
 ### Troubleshooting
 
