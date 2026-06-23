@@ -36,21 +36,21 @@ These links are meant to specify the exact part used, not to endorse a particula
 The dashboard opens a Socket.IO connection to the Arduino UNO Q and reflects its state in real time. A status dot turns green when connected and red when disconnected, paired with a card showing the timestamp of the last connection change and the last detection received. A running count of detections since the page was last refreshed gives an at-a-glance sense of activity and confirms the pipeline is alive end-to-end from camera to UNO Q to browser.
 
 <p align="center">
-  <img src="Assets/dashboard0.png" width="600">
+  <img src="Assets/dashboard0.png" height="400">
 </p>
 
 #### Live Feed & Detection Log
 An embedded iframe streams the live annotated video feed such as done by Arduino built-in app [video-generic-object-detection](https://github.com/arduino/app-bricks-examples/tree/main/examples/common/video-generic-object-detection). Below is a detection log lists each vehicle as it's detected along with its average confidence score (updated in real-time). Once a vehicle's direction of travel is determined the corresponding log entry updates with it.
 
 <p align="center">
-  <img src="Assets/dashboard1.png" width="600">
+  <img src="Assets/dashboard1.png" height="400">
 </p>
 
 #### Traffic Flow Chart
 Detections are aggregated into a bar chart showing flow by direction (right-to-left vs. left-to-right) with hover tooltips. Four filter buttons (5 min / 1 hour / 1 day / 1 week) enable visualizing different time windows. Two color pickers are present to customize the chart's RTL/LTR bar colors to taste. Both color choices and detection history (up to one week) persist locally via `localStorage`. A reset button is available to clear the stored history entirely.
 
 <p align="center">
-  <img src="Assets/dashboard2.png" width="600">
+  <img src="Assets/dashboard2.png" height="400">
 </p>
 
 ## Deployment
