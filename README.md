@@ -81,6 +81,25 @@ Following model generation, the **VideoObjectDetection brick** was used to deplo
 
 ### Tracking
 
+Following detection, a lightweight custom **IoU-based tracker** takes over assigning each detected vehicle a stable ID, filtering out false positives, and estimating its direction of travel.
+
+#### Track Matching (IoU)
+Each new frame's detections are matched against existing tracks using **Intersection over Union (IoU)** (a measure of how much two bounding boxes overlap). For each detection, the tracker compares it against all current tracks and assigns it to whichever track has the highest IoU score, as long as that score clears a minimum `iou_threshold`. If no existing track is a good enough match, a new track is created instead.
+
+This threshold is a key tuning parameter:
+- **Higher threshold** => stricter matching. Helps avoid merging two nearby vehicles into a single track in crowded scenes, but can lose a track if the vehicle moves fast relative to frame rate or the detector is laggy (missing frames).
+- **Lower threshold** => more lenient matching. Tolerates fast motion or lower frame rates, but risks incorrectly matching two different vehicles that pass close together.
+
+#### Direction Estimation
+Each track keeps a short of its horizontal position (`x1` of its bounding box) across its last few frames. Once enough history has accumulated, the tracker compares the oldest and newest positions in that window: if the drift exceeds a minimum pixel threshold (filtering out idle/stationary noise), the vehicle is classified as moving `left_to_right` or `right_to_left` based on the sign of that drift. Camera orientation determines which physical direction corresponds to which label, so this may need adjusting depending on your camera's angle.
+
+#### Track Lifecycle & Filtering
+To avoid false positives from single-frame detection blips, a track is only reported once it has been successfully matched for several consecutive frames (`MIN_HITS_TO_CONFIRM`). This means a vehicle briefly mis-detected for one frame won't generate a spurious entry in the dashboard's detection log.
+
+Tracks are also automatically aged out: if a track goes unmatched for too many consecutive frames (`max_missed`), it's removed entirely. This parameter is also a trade-off:
+- **Higher `max_missed`** => tolerates brief occlusion (e.g. a vehicle passing behind another object) without losing its ID, but keeps stale tracks alive longer.
+- **Lower `max_missed`** => cleans up faster, but a briefly occluded vehicle may get dropped and re-detected as a "new" vehicle, leading to double-counting.
+
 ### Dashboard
 
 #### Connection Status
@@ -109,3 +128,4 @@ Detections are aggregated into a bar chart showing flow by direction (right-to-l
 1. Follow Arduino's UNO Q setup to get the board on your network and accessible over SSH/VS Code Remote [here](https://github.com/ThomasLenges/trafficFlow/blob/master/ARDUINO_UNO_Q/README.md).
 2. Start the app with `arduino-app-cli app start ~/path/to/appFolder`.
 3. Note the board's local IP or hostname (shown in the python logs (`arduino-app-cli app logs ~/path/to/ARDUINO_UNO_Q`)) the dashboard needs this to reach the camera/recording API directly.
+4. Feel free to play with model detection threshold, IoU threshold or other tracking parameters to get the best out of this project.
