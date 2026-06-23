@@ -30,6 +30,10 @@ These links are meant to specify the exact part used, not to endorse a particula
 
 The vehicle detection model was built and trained using [Edge Impulse](https://www.edgeimpulse.com/). The full Edge Impulse project including dataset, training experiments, and exported models is publicly available [here](https://studio.edgeimpulse.com/studio/1003932).
 
+<p align="center">
+  <img src="Assets/edgeImpulse.png" height="300">
+</p>
+
 #### Data Collection & Labelling
 New data was collected by connecting the UNO Q to Edge Impulse via the data forwarder:
 ```bash
