@@ -8,7 +8,7 @@ https://github.com/user-attachments/assets/e6233895-3bfb-4539-87b5-fe647224761f
 
 **[Live dashboard](https://thomaslenges.github.io/trafficFlow/)** hosted via GitHub Pages. This hosted demo shows the dashboard UI only since it isn't connected to any running hardware, no local data is present (which is why the graph appears empty).
 
-Deploy the project yourself to try out the model and tune the key parameters explained later in this README!
+Deploy the project yourself to try out the model and tune key parameters explained later in this README!
 
 ## Hardware
 
@@ -27,6 +27,53 @@ These links are meant to specify the exact part used, not to endorse a particula
 ## Software
 
 ### Detection
+
+The vehicle detection model was built and trained using [Edge Impulse](https://www.edgeimpulse.com/). The full Edge Impulse project including dataset, training experiments, and exported models is publicly available [here](https://studio.edgeimpulse.com/studio/1003932).
+
+#### Data Collection & Labelling
+New data was collected by connecting the UNO Q to Edge Impulse via the data forwarder:
+```bash
+$ edge-impulse-data-forwarder
+```
+In total, 399 data items were collected and labelled, with an 83%/17% train/test split.
+
+Only cars, trucks, and buses were labelled, all under a single class: `Vehicle`. Motorcycles and bicycles were deliberately excluded from the dataset to minimize false positives on pedestrians.
+
+**Tip**: label around 100 images first and train an initial model, then use that model to assist in labelling the rest of the dataset. Manual correction is still needed, but it saves significant time. 100 labelled images is already enough to get a model with usable results.
+
+#### Model Selection & Optimization
+The main challenge was balancing inference time against accuracy: the model needed to run in real time on the UNO Q's Qualcomm Adreno 702 GPU, with low enough latency to support reliable tracking.
+
+The first attempt used a YOLO model at full 320×320 RGB resolution (307,200 features), trained for 100 cycles at a learning rate of 0.001. While accuracy was strong, inference time was far too slow around 1097ms per frame, or roughly 0.9 FPS in the best case, before even accounting for the rest of the pipeline.
+
+From there, resolution was progressively reduced to bring inference time down, with the following results (all FP32 model version, evaluated on UNO Q):
+
+| Resolution | Features | Inference Time | Approx. FPS | Flash Usage | mAP | Accuracy (legacy) |
+|---|---|---|---|---|---|---|
+| 320×320 | 307,200 | 1097 ms | ~0.9 | 27.5 MB | 0.71 | 93.42% |
+| 160×160 | 76,800 | 282 ms | ~3.5 | 27.5 MB | 0.63 | 92.11% |
+| 96×96 | 27,648 | 138 ms | ~7.2 | 27.5 MB | 0.58 | 84.21% |
+
+*(mean Average Precision (mAP) measures how well the model both locates and correctly classifies objects across different confidence thresholds with 1.0 being a perfect score.)*
+
+Reducing the resolution further below 96×96 caused accuracy to drop sharply to the point of being unusable, so this was treated as the practical lower bound for YOLO at this feature count.
+
+**FOMO MobileNetV2 0.35** was also explored as a lightweight alternative, and looked very promising on paper with an inference time of just 46ms alongside strong metrics:
+
+| Metric | Value |
+|---|---|
+| Accuracy | 0.83 |
+| Precision (non-background) | 0.99 |
+| Recall (non-background) | 0.89 |
+| F1 Score (non-background) | 0.94 |
+
+However, once deployed, FOMO performed poorly in practice: it produced multiple overlapping detections on single vehicles and a high rate of false positives, making it unsuitable for reliable tracking despite its strong benchmark numbers.
+
+**The 96×96 YOLO model was ultimately selected** for this project, as it offered the best practical trade-off between real-time inference speed and detection accuracy.
+
+Following model generation, the **VideoObjectDetection brick** was used to deploy and run the model on-device, taking inspiration from Arduino's built-in example apps for the UNO Q.
+
+Disclaimer: The model may require finetuning to account for your specific camera positioning and outdoor weather conditions (only tested on good sunlight conditions).
 
 ### Tracking
 
