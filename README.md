@@ -73,7 +73,7 @@ However, once deployed, FOMO performed poorly in practice: it produced multiple 
 
 Following model generation, the **VideoObjectDetection brick** was used to deploy and run the model on-device, taking inspiration from Arduino's built-in example apps for the UNO Q.
 
-Disclaimer: The model may require finetuning to account for your specific camera positioning and outdoor weather conditions (only tested on good sunlight conditions).
+**Disclaimer**: The model may require finetuning to account for your specific camera positioning and outdoor weather conditions (only tested on good sunlight conditions).
 
 ### Tracking
 
