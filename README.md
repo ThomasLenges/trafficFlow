@@ -13,7 +13,7 @@ Deploy the project yourself to try out the model and tune the key parameters exp
 ## Hardware
 
 <p align="center">
-  <img src="Assets/hardware.jpeg" width="600">
+  <img src="Assets/hardware.jpeg" height="600">
 </p>
 
 Project hardware:
